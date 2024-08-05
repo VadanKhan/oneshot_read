@@ -82,34 +82,72 @@ void app_main(void)
 #endif  // #if EXAMPLE_USE_ADC2
 
     while (1) {
-        uint64_t timestamp = esp_timer_get_time(); // Get the current time in microseconds
+        uint64_t start_time = esp_timer_get_time(); // Start time of the loop
 
+        uint64_t read_start_time = esp_timer_get_time(); // Start time before reading ADC1 Channel 0
         ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, EXAMPLE_ADC1_CHAN0, &adc_raw[0][0]));
-        ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Raw Data: %d", timestamp, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, adc_raw[0][0]);
+        uint64_t read_end_time = esp_timer_get_time(); // End time after reading ADC1 Channel 0
+        ESP_LOGI(TAG, "ADC1 Channel 0 Read Time: %llu us", read_end_time - read_start_time);
+        // ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Raw Data: %d", read_end_time, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, adc_raw[0][0]);
+
         if (do_calibration1_chan0) {
+            uint64_t cali_start_time = esp_timer_get_time(); // Start time before calibration
             ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc1_cali_chan0_handle, adc_raw[0][0], &voltage[0][0]));
-            ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Cali Voltage: %d mV", timestamp, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, voltage[0][0]);
+            uint64_t cali_end_time = esp_timer_get_time(); // End time after calibration
+            ESP_LOGI(TAG, "Calibration Time: %llu us", cali_end_time - cali_start_time);
+            uint64_t print_start = esp_timer_get_time(); // Start time before calibration
+            ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Cali Voltage: %d mV", cali_end_time, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, voltage[0][0]);
+            uint64_t print_end = esp_timer_get_time(); // End time after calibration
+            ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
+
         }
 
-        timestamp = esp_timer_get_time(); // Get the current time in microseconds
+
+
+        uint64_t read_start_time2 = esp_timer_get_time(); // Start time before reading ADC1 Channel 1
         ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, EXAMPLE_ADC1_CHAN1, &adc_raw[0][1]));
-        ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Raw Data: %d", timestamp, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN1, adc_raw[0][1]);
+        uint64_t read_end_time2 = esp_timer_get_time(); // End time after reading ADC1 Channel 1
+        ESP_LOGI(TAG, "ADC1 Channel 1 Read Time: %llu us", read_end_time2 - read_start_time2);
+        // ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Raw Data: %d", read_end_time2, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN1, adc_raw[0][1]);
+
         if (do_calibration1_chan1) {
+            uint64_t cali_start_time2 = esp_timer_get_time(); // Start time before calibration
             ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc1_cali_chan1_handle, adc_raw[0][1], &voltage[0][1]));
-            ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Cali Voltage: %d mV", timestamp, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN1, voltage[0][1]);
+            uint64_t cali_end_time2 = esp_timer_get_time(); // End time after calibration
+            ESP_LOGI(TAG, "Calibration Time: %llu us", cali_end_time2 - cali_start_time2);
+
+            uint64_t print_start = esp_timer_get_time(); // Start time before calibration
+            ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Cali Voltage: %d mV", cali_end_time2, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN1, voltage[0][1]);
+            uint64_t print_end = esp_timer_get_time(); // End time after calibration
+            ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
+
         }
 
-#if EXAMPLE_USE_ADC2
-        timestamp = esp_timer_get_time(); // Get the current time in microseconds
+
+
+    #if EXAMPLE_USE_ADC2
+        uint64_t read_start_time3 = esp_timer_get_time(); // Start time before reading ADC2 Channel 0
         ESP_ERROR_CHECK(adc_oneshot_read(adc2_handle, EXAMPLE_ADC2_CHAN0, &adc_raw[1][0]));
-        ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Raw Data: %d", timestamp, ADC_UNIT_2 + 1, EXAMPLE_ADC2_CHAN0, adc_raw[1][0]);
-        if (do_calibration2) {
-            ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc2_cali_handle, adc_raw[1][0], &voltage[1][0]));
-            ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Cali Voltage: %d mV", timestamp, ADC_UNIT_2 + 1, EXAMPLE_ADC2_CHAN0, voltage[1][0]);
-        }
-#endif  // #if EXAMPLE_USE_ADC2
+        uint64_t read_end_time3 = esp_timer_get_time(); // End time after reading ADC2 Channel 0
+        ESP_LOGI(TAG, "ADC2 Channel 0 Read Time: %llu us", read_end_time3 - read_start_time3);
+        // ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Raw Data: %d", read_end_time3, ADC_UNIT_2 + 1, EXAMPLE_ADC2_CHAN0, adc_raw[1][0]);
 
-        // vTaskDelay(pdMS_TO_TICKS(1)); // Optional delay if needed
+        if (do_calibration2) {
+            uint64_t cali_start_time3 = esp_timer_get_time(); // Start time before calibration
+            ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc2_cali_handle, adc_raw[1][0], &voltage[1][0]));
+            uint64_t cali_end_time3 = esp_timer_get_time(); // End time after calibration
+            ESP_LOGI(TAG, "Calibration Time: %llu us", cali_end_time3 - cali_start_time3);
+
+            uint64_t print_start = esp_timer_get_time(); // Start time before calibration
+            ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Cali Voltage: %d mV", cali_end_time3, ADC_UNIT_2 + 1, EXAMPLE_ADC2_CHAN0, voltage[1][0]);
+            uint64_t print_end = esp_timer_get_time(); // End time after calibration
+            ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
+        }
+
+    #endif  //#if EXAMPLE_USE_ADC2
+
+        uint64_t end_time = esp_timer_get_time(); // End time of the loop
+        ESP_LOGI(TAG, "Total Loop Time: %llu us", end_time - start_time);
     }
 
     // Tear Down
