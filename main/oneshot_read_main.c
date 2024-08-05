@@ -83,8 +83,8 @@ void app_main(void)
 #endif  // #if EXAMPLE_USE_ADC2
 
     // DAC Init
-    ESP_ERROR_CHECK(dac_output_enable(DAC_CHANNEL_1)); // DAC Channel 1 (GPIO25)
-    ESP_ERROR_CHECK(dac_output_enable(DAC_CHANNEL_2)); // DAC Channel 2 (GPIO26)
+    ESP_ERROR_CHECK(dac_oneshot_output_enable(DAC_CHAN_0)); // DAC Channel 1 (GPIO25)
+    ESP_ERROR_CHECK(dac_oneshot_output_enable(DAC_CHAN_1)); // DAC Channel 2 (GPIO26)
 
     while (1) {
         uint64_t start_time = esp_timer_get_time(); // Start time of the loop
@@ -108,7 +108,7 @@ void app_main(void)
 
             // Output to DAC Channel 1
             uint8_t dac_value = (uint8_t)((voltage[0][0] * 255) / 3300); // Convert mV to 8-bit DAC value
-            ESP_ERROR_CHECK(dac_output_voltage(DAC_CHANNEL_1, dac_value));
+            ESP_ERROR_CHECK(dac_oneshot_output_voltage(DAC_CHAN_0, dac_value));
         }
 
         uint64_t read_start_time2 = esp_timer_get_time(); // Start time before reading ADC1 Channel 1
@@ -129,7 +129,7 @@ void app_main(void)
 
             // Output to DAC Channel 2
             uint8_t dac_value2 = (uint8_t)((voltage[0][1] * 255) / 3300); // Convert mV to 8-bit DAC value
-            ESP_ERROR_CHECK(dac_output_voltage(DAC_CHANNEL_2, dac_value2));
+            ESP_ERROR_CHECK(dac_oneshot_output_voltage(DAC_CHAN_1, dac_value2));
         }
 
 #if EXAMPLE_USE_ADC2
