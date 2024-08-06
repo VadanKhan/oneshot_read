@@ -128,7 +128,7 @@ void app_main(void)
             // Output to DAC Channel 1
             uint8_t dac_value1 = (uint8_t)((voltage[0][0] * 255) / 3300); // Convert mV to 8-bit DAC value
             uint64_t print_start = esp_timer_get_time(); // Start time before calibration
-            ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Voltage: %d mV, DAC input 1: %d", cali_end_time, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, voltage[0][0], dac_value1);
+            // ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Voltage: %d mV, DAC input 1: %d", cali_end_time, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, voltage[0][0], dac_value1);
             uint64_t print_end = esp_timer_get_time(); // End time after calibration
 
             // ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
@@ -176,9 +176,9 @@ void app_main(void)
         #endif  // #if EXAMPLE_USE_ADC2
 
         uint64_t end_time = esp_timer_get_time(); // End time of the loop
-        ESP_LOGI(TAG, "Loop Time: %llu us", end_time - start_time);
+        // ESP_LOGI(TAG, "Loop Time: %llu us", end_time - start_time);
 
-        vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
+        // vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
     }
 
     // Deinit
