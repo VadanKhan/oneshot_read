@@ -10,6 +10,7 @@
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_timer.h" // Include esp_timer for microsecond timestamps
 #include "driver/dac_oneshot.h" // Include DAC driver
+// #include "esp_adc_cal.h"
 
 const static char *TAG = "EXAMPLE";
 
@@ -23,8 +24,8 @@ const static char *TAG = "EXAMPLE";
 #endif
 
 #if (SOC_ADC_PERIPH_NUM >= 2) && !CONFIG_IDF_TARGET_ESP32C3
-#define EXAMPLE_USE_ADC2            1
-#endif
+#define EXAMPLE_USE_ADC2            1                   
+#endif // setting to use Second ADC ^^^
 
 #if EXAMPLE_USE_ADC2
 // ADC2 Channels
@@ -37,6 +38,25 @@ const static char *TAG = "EXAMPLE";
 
 #define EXAMPLE_ADC_ATTEN           ADC_ATTEN_DB_12
 
+static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle)
+{
+    adc_cali_line_fitting_config_t cali_config = {
+        .unit_id = unit,
+        .atten = atten,
+        .bitwidth = ADC_BITWIDTH_DEFAULT,
+    };
+    esp_err_t err = adc_cali_create_scheme_line_fitting(&cali_config, out_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "Failed to initialize calibration: %s", esp_err_to_name(err));
+        return false;
+    }
+    return true;
+}
+
+static void example_adc_calibration_deinit(adc_cali_handle_t handle)
+{
+    adc_cali_delete_scheme_line_fitting(handle);
+}
 static int adc_raw[2][10];
 static int voltage[2][10];
 static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle);
@@ -83,8 +103,13 @@ void app_main(void)
 #endif  // #if EXAMPLE_USE_ADC2
 
     // DAC Init
-    ESP_ERROR_CHECK(dac_oneshot_output_enable(DAC_CHAN_0)); // DAC Channel 1 (GPIO25)
-    ESP_ERROR_CHECK(dac_oneshot_output_enable(DAC_CHAN_1)); // DAC Channel 2 (GPIO26)
+    dac_oneshot_handle_t dac_handle;
+    dac_oneshot_config_t dac_config = {
+        .chan_id = DAC_CHAN_0,
+    };
+    ESP_ERROR_CHECK(dac_oneshot_new_channel(&dac_config, &dac_handle)); // DAC Channel 1 (GPIO25)
+    dac_config.chan_id = DAC_CHAN_1;
+    ESP_ERROR_CHECK(dac_oneshot_new_channel(&dac_config, &dac_handle)); // DAC Channel 2 (GPIO26)
 
     while (1) {
         uint64_t start_time = esp_timer_get_time(); // Start time of the loop
@@ -104,11 +129,9 @@ void app_main(void)
             uint64_t print_end = esp_timer_get_time(); // End time after calibration
             ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
 
-            
-
             // Output to DAC Channel 1
             uint8_t dac_value = (uint8_t)((voltage[0][0] * 255) / 3300); // Convert mV to 8-bit DAC value
-            ESP_ERROR_CHECK(dac_oneshot_output_voltage(DAC_CHAN_0, dac_value));
+            ESP_ERROR_CHECK(dac_oneshot_output_voltage(dac_handle, dac_value));
         }
 
         uint64_t read_start_time2 = esp_timer_get_time(); // Start time before reading ADC1 Channel 1
@@ -129,10 +152,10 @@ void app_main(void)
 
             // Output to DAC Channel 2
             uint8_t dac_value2 = (uint8_t)((voltage[0][1] * 255) / 3300); // Convert mV to 8-bit DAC value
-            ESP_ERROR_CHECK(dac_oneshot_output_voltage(DAC_CHAN_1, dac_value2));
+            ESP_ERROR_CHECK(dac_oneshot_output_voltage(dac_handle, dac_value2));
         }
 
-#if EXAMPLE_USE_ADC2
+        #if EXAMPLE_USE_ADC2
         uint64_t read_start_time3 = esp_timer_get_time(); // Start time before reading ADC2 Channel 0
         ESP_ERROR_CHECK(adc_oneshot_read(adc2_handle, EXAMPLE_ADC2_CHAN0, &adc_raw[1][0]));
         uint64_t read_end_time3 = esp_timer_get_time(); // End time after reading ADC2 Channel 0
@@ -149,90 +172,22 @@ void app_main(void)
             uint64_t print_end = esp_timer_get_time(); // End time after calibration
             ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
         }
+        #endif  // #if EXAMPLE_USE_ADC2
 
-#endif  //#if EXAMPLE_USE_ADC2
         uint64_t end_time = esp_timer_get_time(); // End time of the loop
-        ESP_LOGI(TAG, "Total Loop Time: %llu us", end_time - start_time);
+        ESP_LOGI(TAG, "Loop Time: %llu us", end_time - start_time);
+
+        vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
     }
 
-
-    // Tear Down
+    // Deinit
     ESP_ERROR_CHECK(adc_oneshot_del_unit(adc1_handle));
-    if (do_calibration1_chan0) {
-        example_adc_calibration_deinit(adc1_cali_chan0_handle);
-    }
-    if (do_calibration1_chan1) {
-        example_adc_calibration_deinit(adc1_cali_chan1_handle);
-    }
-
+    ESP_ERROR_CHECK(dac_oneshot_del_channel(dac_handle));
+    example_adc_calibration_deinit(adc1_cali_chan0_handle);
+    example_adc_calibration_deinit(adc1_cali_chan1_handle);
 #if EXAMPLE_USE_ADC2
     ESP_ERROR_CHECK(adc_oneshot_del_unit(adc2_handle));
-    if (do_calibration2) {
-        example_adc_calibration_deinit(adc2_cali_handle);
-    }
+    example_adc_calibration_deinit(adc2_cali_handle);
 #endif  // #if EXAMPLE_USE_ADC2
 }
 
-/*---------------------------------------------------------------
-        ADC Calibration
----------------------------------------------------------------*/
-static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle)
-{
-    adc_cali_handle_t handle = NULL;
-    esp_err_t ret = ESP_FAIL;
-    bool calibrated = false;
-
-#if ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
-    if (!calibrated) {
-        ESP_LOGI(TAG, "calibration scheme version is %s", "Curve Fitting");
-        adc_cali_curve_fitting_config_t cali_config = {
-            .unit_id = unit,
-            .chan = channel,
-            .atten = atten,
-            .bitwidth = ADC_BITWIDTH_DEFAULT,
-        };
-        ret = adc_cali_create_scheme_curve_fitting(&cali_config, &handle);
-        if (ret == ESP_OK) {
-            calibrated = true;
-        }
-    }
-#endif
-
-#if ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
-    if (!calibrated) {
-        ESP_LOGI(TAG, "calibration scheme version is %s", "Line Fitting");
-        adc_cali_line_fitting_config_t cali_config = {
-            .unit_id = unit,
-            .atten = atten,
-            .bitwidth = ADC_BITWIDTH_DEFAULT,
-        };
-        ret = adc_cali_create_scheme_line_fitting(&cali_config, &handle);
-        if (ret == ESP_OK) {
-            calibrated = true;
-        }
-    }
-#endif
-
-    *out_handle = handle;
-    if (ret == ESP_OK) {
-        ESP_LOGI(TAG, "Calibration Success");
-    } else if (ret == ESP_ERR_NOT_SUPPORTED || !calibrated) {
-        ESP_LOGW(TAG, "eFuse not burnt, skip software calibration");
-    } else {
-        ESP_LOGE(TAG, "Invalid arg or no memory");
-    }
-
-    return calibrated;
-}
-
-static void example_adc_calibration_deinit(adc_cali_handle_t handle)
-{
-#if ADC_CALI_SCHEME_CURVE_FITTING_SUPPORTED
-    ESP_LOGI(TAG, "deregister %s calibration scheme", "Curve Fitting");
-    ESP_ERROR_CHECK(adc_cali_delete_scheme_curve_fitting(handle));
-
-#elif ADC_CALI_SCHEME_LINE_FITTING_SUPPORTED
-    ESP_LOGI(TAG, "deregister %s calibration scheme", "Line Fitting");
-    ESP_ERROR_CHECK(adc_cali_delete_scheme_line_fitting(handle));
-#endif
-}
