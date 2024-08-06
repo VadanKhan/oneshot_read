@@ -8,7 +8,7 @@
 #include "esp_adc/adc_oneshot.h"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
-#include "esp_timer.h" // Include esp_timer for microsecond timestamps
+// #include "esp_timer.h" // Include esp_timer for microsecond timestamps
 #include "driver/dac_oneshot.h" // Include DAC driver
 // #include "esp_adc_cal.h"
 
@@ -112,38 +112,38 @@ void app_main(void)
     ESP_ERROR_CHECK(dac_oneshot_new_channel(&dac_config, &dac_handle_1)); // DAC Channel 2 (GPIO26)
 
     while (1) {
-        uint64_t start_time = esp_timer_get_time(); // Start time of the loop
+        // uint64_t start_time = esp_timer_get_time(); // Start time of the loop
 
-        uint64_t read_start_time = esp_timer_get_time(); // Start time before reading ADC1 Channel 0
+        // uint64_t read_start_time = esp_timer_get_time(); // Start time before reading ADC1 Channel 0
         ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, EXAMPLE_ADC1_CHAN0, &adc_raw[0][0]));
-        uint64_t read_end_time = esp_timer_get_time(); // End time after reading ADC1 Channel 0
+        // uint64_t read_end_time = esp_timer_get_time(); // End time after reading ADC1 Channel 0
         // ESP_LOGI(TAG, "ADC1 Channel 0 Read Time: %llu us", read_end_time - read_start_time);
 
         if (do_calibration1_chan0) {
-            uint64_t cali_start_time = esp_timer_get_time(); // Start time before calibration
+            // uint64_t cali_start_time = esp_timer_get_time(); // Start time before calibration
             ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc1_cali_chan0_handle, adc_raw[0][0], &voltage[0][0]));
-            uint64_t cali_end_time = esp_timer_get_time(); // End time after calibration
+            // uint64_t cali_end_time = esp_timer_get_time(); // End time after calibration
             // ESP_LOGI(TAG, "Calibration Time: %llu us", cali_end_time - cali_start_time);
 
             // Output to DAC Channel 1
             uint8_t dac_value1 = (uint8_t)((voltage[0][0] * 255) / 3300); // Convert mV to 8-bit DAC value
-            uint64_t print_start = esp_timer_get_time(); // Start time before calibration
+            // uint64_t print_start = esp_timer_get_time(); // Start time before calibration
             // ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Voltage: %d mV, DAC input 1: %d", cali_end_time, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, voltage[0][0], dac_value1);
-            uint64_t print_end = esp_timer_get_time(); // End time after calibration
+            // uint64_t print_end = esp_timer_get_time(); // End time after calibration
 
             // ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
             ESP_ERROR_CHECK(dac_oneshot_output_voltage(dac_handle_0, dac_value1));
         }
 
-        uint64_t read_start_time2 = esp_timer_get_time(); // Start time before reading ADC1 Channel 1
+        // uint64_t read_start_time2 = esp_timer_get_time(); // Start time before reading ADC1 Channel 1
         ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, EXAMPLE_ADC1_CHAN1, &adc_raw[0][1]));
-        uint64_t read_end_time2 = esp_timer_get_time(); // End time after reading ADC1 Channel 1
+        // uint64_t read_end_time2 = esp_timer_get_time(); // End time after reading ADC1 Channel 1
         // ESP_LOGI(TAG, "ADC1 Channel 1 Read Time: %llu us", read_end_time2 - read_start_time2);
 
         if (do_calibration1_chan1) {
-            uint64_t cali_start_time2 = esp_timer_get_time(); // Start time before calibration
+            // uint64_t cali_start_time2 = esp_timer_get_time(); // Start time before calibration
             ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc1_cali_chan1_handle, adc_raw[0][1], &voltage[0][1]));
-            uint64_t cali_end_time2 = esp_timer_get_time(); // End time after calibration
+            // uint64_t cali_end_time2 = esp_timer_get_time(); // End time after calibration
             // ESP_LOGI(TAG, "Calibration Time: %llu us", cali_end_time2 - cali_start_time2);
 
             // uint64_t print_start = esp_timer_get_time(); // Start time before calibration
