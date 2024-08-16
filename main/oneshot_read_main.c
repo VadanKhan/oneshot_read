@@ -175,7 +175,7 @@ void app_main(void)
         }
         #endif  // #if EXAMPLE_USE_ADC2
 
-        uint64_t end_time = esp_timer_get_time(); // End time of the loop
+        // uint64_t end_time = esp_timer_get_time(); // End time of the loop
         // ESP_LOGI(TAG, "Loop Time: %llu us", end_time - start_time);
 
         // vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
