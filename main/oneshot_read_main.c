@@ -167,8 +167,8 @@ void app_main(void)
             // ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Voltage: %d mV, DAC input 1: %d", cali_end_time, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, voltage[0][0], dac_value1);
             // uint64_t print_end = esp_timer_get_time(); // End time after calibration
             
-            float MULTIPLICATIVE_FACTOR = 1;
-            float MAX = 2.5;
+            float MULTIPLICATIVE_FACTOR = 42;
+            float MAX = 3;
             uint8_t dac_value1 = process_voltage_antiphase(voltage[0][0], MULTIPLICATIVE_FACTOR, MAX);
 
             // ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
