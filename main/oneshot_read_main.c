@@ -62,41 +62,31 @@ static int voltage[2][10];
 static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle);
 static void example_adc_calibration_deinit(adc_cali_handle_t handle);
 
-// Function to process voltage with a multiplicative factor
-uint8_t multiply_voltage(int raw_voltage, float factor) {
-    // Apply the multiplicative factor to the voltage
-    int adjusted_voltage = raw_voltage * factor;
+
+// better feedback code
+uint8_t process_voltage_custom(int raw_voltage, float offset, float mult) {
+    // Convert raw voltage to actual voltage (float)
+    float actual_voltage = raw_voltage / 1000.0;
+
+    // Subtract the difference from 0.22V
+    float adjusted_voltage = actual_voltage - offset;
+
+    // Multiply the signal by -42
+    adjusted_voltage *= mult;
+
+    // Add a 1.25V offset
+    adjusted_voltage += 1.25;
 
     // Ensure the adjusted voltage does not exceed the DAC range
-    if (adjusted_voltage > 3300) {
-        adjusted_voltage = 3300;
+    if (adjusted_voltage > 3.3) {
+        adjusted_voltage = 3.3;
     } else if (adjusted_voltage < 0) {
         adjusted_voltage = 0;
     }
 
-    // Convert mV to 8-bit DAC value
-    return (uint8_t)((adjusted_voltage * 255) / 3300);
+    // Convert voltage to 8-bit DAC value
+    return (uint8_t)((adjusted_voltage * 255) / 3.3);
 }
-
-// Function to process voltage with a multiplicative factor and generate an antiphase function
-uint8_t process_voltage_antiphase(int raw_voltage, float factor, float max) {
-    // Apply the multiplicative factor to the voltage
-    int adjusted_voltage = raw_voltage * factor;
-
-    // Ensure the adjusted voltage does not exceed the DAC range
-    if (adjusted_voltage > 3300) {
-        adjusted_voltage = 3300;
-    } else if (adjusted_voltage < 0) {
-        adjusted_voltage = 0;
-    }
-
-    // Generate the antiphase voltage
-    int antiphase_voltage = max * 1000 - adjusted_voltage;
-
-    // Convert mV to 8-bit DAC value
-    return (uint8_t)((antiphase_voltage * 255) / 3300);
-}
-
 
 void app_main(void)
 {
@@ -167,9 +157,9 @@ void app_main(void)
             // ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Voltage: %d mV, DAC input 1: %d", cali_end_time, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, voltage[0][0], dac_value1);
             // uint64_t print_end = esp_timer_get_time(); // End time after calibration
             
-            float MULTIPLICATIVE_FACTOR = 42;
-            float MAX = 3;
-            uint8_t dac_value1 = process_voltage_antiphase(voltage[0][0], MULTIPLICATIVE_FACTOR, MAX);
+            float OFFSET = 0.22;
+            float MULTIPLICATIVE_FACTOR = -4;
+            uint8_t dac_value1 = process_voltage_custom(voltage[0][0], OFFSET, MULTIPLICATIVE_FACTOR);
 
             // ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
             ESP_ERROR_CHECK(dac_oneshot_output_voltage(dac_handle_0, dac_value1));
