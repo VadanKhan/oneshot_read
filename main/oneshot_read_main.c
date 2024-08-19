@@ -8,7 +8,7 @@
 #include "esp_adc/adc_oneshot.h"
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
-// #include "esp_timer.h" // Include esp_timer for microsecond timestamps
+#include "esp_timer.h" // Include esp_timer for microsecond timestamps
 #include "driver/dac_oneshot.h" // Include DAC driver
 // #include "esp_adc_cal.h"
 
@@ -61,6 +61,10 @@ static int adc_raw[2][10];
 static int voltage[2][10];
 static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle);
 static void example_adc_calibration_deinit(adc_cali_handle_t handle);
+
+
+float OFFSET = 0.25;
+float P_FACTOR = 15;
 
 
 // better feedback code
@@ -137,6 +141,8 @@ void app_main(void)
     dac_config.chan_id = DAC_CHAN_1;
     ESP_ERROR_CHECK(dac_oneshot_new_channel(&dac_config, &dac_handle_1)); // DAC Channel 2 (GPIO26)
 
+
+
     while (1) {
         // uint64_t start_time = esp_timer_get_time(); // Start time of the loop
 
@@ -156,10 +162,12 @@ void app_main(void)
             // uint64_t print_start = esp_timer_get_time(); // Start time before calibration
             // ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Voltage: %d mV, DAC input 1: %d", cali_end_time, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, voltage[0][0], dac_value1);
             // uint64_t print_end = esp_timer_get_time(); // End time after calibration
+
+            // uint64_t process_start = esp_timer_get_time(); // Start time before processing
+            uint8_t dac_value1 = process_voltage_custom(voltage[0][0], OFFSET, P_FACTOR);
+            // uint64_t process_end = esp_timer_get_time(); // End time after processing
+            // ESP_LOGI(TAG, "process Time: %llu us", process_end - process_start);
             
-            float OFFSET = 0.22;
-            float MULTIPLICATIVE_FACTOR = -4;
-            uint8_t dac_value1 = process_voltage_custom(voltage[0][0], OFFSET, MULTIPLICATIVE_FACTOR);
 
             // ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
             ESP_ERROR_CHECK(dac_oneshot_output_voltage(dac_handle_0, dac_value1));
