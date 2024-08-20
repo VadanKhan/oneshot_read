@@ -36,7 +36,7 @@ const static char *TAG = "EXAMPLE";
 #endif
 #endif  // #if EXAMPLE_USE_ADC2
 
-#define EXAMPLE_ADC_ATTEN           ADC_ATTEN_DB_12
+#define EXAMPLE_ADC_ATTEN           ADC_ATTEN_DB_2_5
 
 static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle)
 {
@@ -62,7 +62,7 @@ static int voltage[2][10];
 static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle);
 static void example_adc_calibration_deinit(adc_cali_handle_t handle);
 
-float ESP_ADCERROR = 0.02; // a hardcoded offset (in V) to correct for experimental adc errors.
+// float ESP_ADCERROR = 0.02; // a hardcoded offset (in V) to correct for experimental adc errors.
 
 float OFFSET = 0.2;
 float P_FACTOR = 17.5;
@@ -71,7 +71,7 @@ float P_FACTOR = 17.5;
 // better feedback code
 uint8_t process_voltage_custom(int raw_voltage, float offset, float mult) {
     // Convert raw voltage to actual voltage (float)
-    float actual_voltage = raw_voltage / 1000.0 + ESP_ADCERROR;
+    float actual_voltage = raw_voltage / 1000.0;
 
     // Subtract the difference from offset
     float adjusted_voltage = actual_voltage - offset;
