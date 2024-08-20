@@ -62,20 +62,21 @@ static int voltage[2][10];
 static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle);
 static void example_adc_calibration_deinit(adc_cali_handle_t handle);
 
+float ESP_ADCERROR = 0.02; // a hardcoded offset (in V) to correct for experimental adc errors.
 
-float OFFSET = 0.25;
-float P_FACTOR = 15;
+float OFFSET = 0.2;
+float P_FACTOR = 17.5;
 
 
 // better feedback code
 uint8_t process_voltage_custom(int raw_voltage, float offset, float mult) {
     // Convert raw voltage to actual voltage (float)
-    float actual_voltage = raw_voltage / 1000.0;
+    float actual_voltage = raw_voltage / 1000.0 + ESP_ADCERROR;
 
-    // Subtract the difference from 0.22V
+    // Subtract the difference from offset
     float adjusted_voltage = actual_voltage - offset;
 
-    // Multiply the signal by -42
+    // Multiply the signal by mult
     adjusted_voltage *= mult;
 
     // Add a 1.25V offset
@@ -156,21 +157,21 @@ void app_main(void)
             ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc1_cali_chan0_handle, adc_raw[0][0], &voltage[0][0]));
             // uint64_t cali_end_time = esp_timer_get_time(); // End time after calibration
             // ESP_LOGI(TAG, "Calibration Time: %llu us", cali_end_time - cali_start_time);
+            // ESP_LOGI(TAG, "Time: %llu us", cali_end_time);
 
-            // Output to DAC Channel 1
-            // uint8_t dac_value1 = (uint8_t)((voltage[0][0] * 255) / 3300); // Convert mV to 8-bit DAC value
-            // uint64_t print_start = esp_timer_get_time(); // Start time before calibration
-            // ESP_LOGI(TAG, "Time: %llu us, ADC%d Channel[%d] Voltage: %d mV, DAC input 1: %d", cali_end_time, ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, voltage[0][0], dac_value1);
-            // uint64_t print_end = esp_timer_get_time(); // End time after calibration
+            // uint64_t print_start = esp_timer_get_time(); 
+            // ESP_LOGI(TAG, "ADC%d Channel[%d] Voltage: %d mV", ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, voltage[0][0]);
+            // uint64_t print_end = esp_timer_get_time(); 
 
             // uint64_t process_start = esp_timer_get_time(); // Start time before processing
             uint8_t dac_value1 = process_voltage_custom(voltage[0][0], OFFSET, P_FACTOR);
             // uint64_t process_end = esp_timer_get_time(); // End time after processing
             // ESP_LOGI(TAG, "process Time: %llu us", process_end - process_start);
             
-
+            // Output to DAC Channel 1
             // ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
             ESP_ERROR_CHECK(dac_oneshot_output_voltage(dac_handle_0, dac_value1));
+            // ESP_LOGI(TAG, "DAC input 1: %d, %f mV", dac_value1, dac_value1 * 3.3 / 255 );
         }
 
         // uint64_t read_start_time2 = esp_timer_get_time(); // Start time before reading ADC1 Channel 1
