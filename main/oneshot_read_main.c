@@ -10,11 +10,10 @@
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_timer.h" // Include esp_timer for microsecond timestamps
 #include "driver/dac_oneshot.h" // Include DAC driver
-// #include "esp_adc_cal.h"
 
 const static char *TAG = "EXAMPLE";
 
-// ADC1 Channels
+// ADC1 Channels to use
 #if CONFIG_IDF_TARGET_ESP32
 #define EXAMPLE_ADC1_CHAN0          ADC_CHANNEL_4
 #define EXAMPLE_ADC1_CHAN1          ADC_CHANNEL_5
@@ -25,10 +24,11 @@ const static char *TAG = "EXAMPLE";
 
 #if (SOC_ADC_PERIPH_NUM >= 2) && !CONFIG_IDF_TARGET_ESP32C3
 #define EXAMPLE_USE_ADC2            1               
-#endif // setting to use third ADC ^^^
+#endif // setting to use Channels on ADC2 ^^^
 
+// ADC2 Channels to use
 #if EXAMPLE_USE_ADC2
-// ADC2 Channels
+// ADC2 Channels to use
 #if CONFIG_IDF_TARGET_ESP32
 #define EXAMPLE_ADC2_CHAN0          ADC_CHANNEL_0
 #else
@@ -36,8 +36,12 @@ const static char *TAG = "EXAMPLE";
 #endif
 #endif  // #if EXAMPLE_USE_ADC2
 
+
+// Define Attenuation Setting here (different settings reduce range of voltage, allowing higher resolution)
 #define EXAMPLE_ADC_ATTEN           ADC_ATTEN_DB_2_5
 
+
+/// Configuration of the Calibration settings (default)
 static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle)
 {
     adc_cali_line_fitting_config_t cali_config = {
@@ -62,13 +66,20 @@ static int voltage[2][10];
 static bool example_adc_calibration_init(adc_unit_t unit, adc_channel_t channel, adc_atten_t atten, adc_cali_handle_t *out_handle);
 static void example_adc_calibration_deinit(adc_cali_handle_t handle);
 
+
+
+
+
 float ESP_ADCERROR = 0.02; // a hardcoded offset (in V) to correct for adc read errors that appear 20mV lower than they should
 
-float OFFSET = 0.2;
-float P_FACTOR = 40;
+float OFFSET = 0.2; // Desired Voltage the System will Correct to
+float P_FACTOR = 40; // multiplier for the voltage delta from OFFSET, increase to make the system more sensitive / responsive.
 
 
-// better feedback code
+
+
+
+// Proportional (P) feedback function
 uint8_t process_voltage_custom(int raw_voltage, float offset, float mult) {
     // Convert raw voltage to actual voltage (float)
     float actual_voltage = raw_voltage / 1000.0 + ESP_ADCERROR;
@@ -93,9 +104,14 @@ uint8_t process_voltage_custom(int raw_voltage, float offset, float mult) {
     return (uint8_t)((adjusted_voltage * 255) / 3.3);
 }
 
+
+
+
+
+// Main code ESP kernel runs begins here:
 void app_main(void)
 {
-    // ADC1 Init
+// ADC1 Initialise
     adc_oneshot_unit_handle_t adc1_handle;
     adc_oneshot_unit_init_cfg_t init_config1 = {
         .unit_id = ADC_UNIT_1,
@@ -110,14 +126,14 @@ void app_main(void)
     ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, EXAMPLE_ADC1_CHAN0, &config));
     ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, EXAMPLE_ADC1_CHAN1, &config));
 
-    // ADC1 Calibration Init
+    // ADC1 Calibration Initialise
     adc_cali_handle_t adc1_cali_chan0_handle = NULL;
     adc_cali_handle_t adc1_cali_chan1_handle = NULL;
     bool do_calibration1_chan0 = example_adc_calibration_init(ADC_UNIT_1, EXAMPLE_ADC1_CHAN0, EXAMPLE_ADC_ATTEN, &adc1_cali_chan0_handle);
     bool do_calibration1_chan1 = example_adc_calibration_init(ADC_UNIT_1, EXAMPLE_ADC1_CHAN1, EXAMPLE_ADC_ATTEN, &adc1_cali_chan1_handle);
 
 #if EXAMPLE_USE_ADC2
-    // ADC2 Init
+// ADC2 Initialise
     adc_oneshot_unit_handle_t adc2_handle;
     adc_oneshot_unit_init_cfg_t init_config2 = {
         .unit_id = ADC_UNIT_2,
@@ -125,7 +141,7 @@ void app_main(void)
     };
     ESP_ERROR_CHECK(adc_oneshot_new_unit(&init_config2, &adc2_handle));
 
-    // ADC2 Calibration Init
+    // ADC2 Calibration Initialise
     adc_cali_handle_t adc2_cali_handle = NULL;
     bool do_calibration2 = example_adc_calibration_init(ADC_UNIT_2, EXAMPLE_ADC2_CHAN0, EXAMPLE_ADC_ATTEN, &adc2_cali_handle);
 
@@ -133,7 +149,8 @@ void app_main(void)
     ESP_ERROR_CHECK(adc_oneshot_config_channel(adc2_handle, EXAMPLE_ADC2_CHAN0, &config));
 #endif  // #if EXAMPLE_USE_ADC2
 
-    // DAC Init
+
+// DAC Initialise
     dac_oneshot_handle_t dac_handle_0, dac_handle_1;
     dac_oneshot_config_t dac_config = {
         .chan_id = DAC_CHAN_0,
@@ -143,45 +160,45 @@ void app_main(void)
     ESP_ERROR_CHECK(dac_oneshot_new_channel(&dac_config, &dac_handle_1)); // DAC Channel 2 (GPIO26)
 
 
-
+// Main Loop
     while (1) {
         // uint64_t start_time = esp_timer_get_time(); // Start time of the loop
 
         // uint64_t read_start_time = esp_timer_get_time(); // Start time before reading ADC1 Channel 0
-        ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, EXAMPLE_ADC1_CHAN0, &adc_raw[0][0]));
+        ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, EXAMPLE_ADC1_CHAN0, &adc_raw[0][0])); // READ ADC CHANNEL
         // uint64_t read_end_time = esp_timer_get_time(); // End time after reading ADC1 Channel 0
         // ESP_LOGI(TAG, "ADC1 Channel 0 Read Time: %llu us", read_end_time - read_start_time);
 
         if (do_calibration1_chan0) {
             // uint64_t cali_start_time = esp_timer_get_time(); // Start time before calibration
-            ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc1_cali_chan0_handle, adc_raw[0][0], &voltage[0][0]));
+            ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc1_cali_chan0_handle, adc_raw[0][0], &voltage[0][0])); // CALIBRATE ADC CHANNEL (otherwise noisy)
             // uint64_t cali_end_time = esp_timer_get_time(); // End time after calibration
             // ESP_LOGI(TAG, "Calibration Time: %llu us", cali_end_time - cali_start_time);
             // ESP_LOGI(TAG, "Time: %llu us", cali_end_time);
 
-            // uint64_t print_start = esp_timer_get_time(); 
+            // uint64_t print_start = esp_timer_get_time(); //measuring time taken to print
             // ESP_LOGI(TAG, "ADC%d Channel[%d] Voltage: %d mV", ADC_UNIT_1 + 1, EXAMPLE_ADC1_CHAN0, voltage[0][0]);
             // uint64_t print_end = esp_timer_get_time(); 
 
             // uint64_t process_start = esp_timer_get_time(); // Start time before processing
-            uint8_t dac_value1 = process_voltage_custom(voltage[0][0], OFFSET, P_FACTOR);
+            uint8_t dac_value1 = process_voltage_custom(voltage[0][0], OFFSET, P_FACTOR);  // ADD PID PROCESSING TO THE ADC VALUE HERE
             // uint64_t process_end = esp_timer_get_time(); // End time after processing
             // ESP_LOGI(TAG, "process Time: %llu us", process_end - process_start);
             
             // Output to DAC Channel 1
             // ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
-            ESP_ERROR_CHECK(dac_oneshot_output_voltage(dac_handle_0, dac_value1));
+            ESP_ERROR_CHECK(dac_oneshot_output_voltage(dac_handle_0, dac_value1)); // OUTPUT VOLTAGE TO DAC
             // ESP_LOGI(TAG, "DAC input 1: %d, %f mV", dac_value1, dac_value1 * 3.3 / 255 );
         }
 
         // uint64_t read_start_time2 = esp_timer_get_time(); // Start time before reading ADC1 Channel 1
-        ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, EXAMPLE_ADC1_CHAN1, &adc_raw[0][1]));
+        ESP_ERROR_CHECK(adc_oneshot_read(adc1_handle, EXAMPLE_ADC1_CHAN1, &adc_raw[0][1])); // READ ADC CHANNEL
         // uint64_t read_end_time2 = esp_timer_get_time(); // End time after reading ADC1 Channel 1
         // ESP_LOGI(TAG, "ADC1 Channel 1 Read Time: %llu us", read_end_time2 - read_start_time2);
 
         if (do_calibration1_chan1) {
             // uint64_t cali_start_time2 = esp_timer_get_time(); // Start time before calibration
-            ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc1_cali_chan1_handle, adc_raw[0][1], &voltage[0][1]));
+            ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc1_cali_chan1_handle, adc_raw[0][1], &voltage[0][1])); // CALIBRATE ADC CHANNEL (otherwise noisy)
             // uint64_t cali_end_time2 = esp_timer_get_time(); // End time after calibration
             // ESP_LOGI(TAG, "Calibration Time: %llu us", cali_end_time2 - cali_start_time2);
 
@@ -197,13 +214,13 @@ void app_main(void)
 
         #if EXAMPLE_USE_ADC2
         // uint64_t read_start_time3 = esp_timer_get_time(); // Start time before reading ADC2 Channel 0
-        ESP_ERROR_CHECK(adc_oneshot_read(adc2_handle, EXAMPLE_ADC2_CHAN0, &adc_raw[1][0]));
+        ESP_ERROR_CHECK(adc_oneshot_read(adc2_handle, EXAMPLE_ADC2_CHAN0, &adc_raw[1][0])); // READ ADC CHANNEL
         // uint64_t read_end_time3 = esp_timer_get_time(); // End time after reading ADC2 Channel 0
         // ESP_LOGI(TAG, "ADC2 Channel 0 Read Time: %llu us", read_end_time3 - read_start_time3);
 
         if (do_calibration2) {
             // uint64_t cali_start_time3 = esp_timer_get_time(); // Start time before calibration
-            ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc2_cali_handle, adc_raw[1][0], &voltage[1][0]));
+            ESP_ERROR_CHECK(adc_cali_raw_to_voltage(adc2_cali_handle, adc_raw[1][0], &voltage[1][0])); // CALIBRATE ADC CHANNEL (otherwise noisy)
             // uint64_t cali_end_time3 = esp_timer_get_time(); // End time after calibration
             // ESP_LOGI(TAG, "Calibration Time: %llu us", cali_end_time3 - cali_start_time3);
 
@@ -220,7 +237,9 @@ void app_main(void)
         // vTaskDelay(pdMS_TO_TICKS(1000)); // Delay for 1 second
     }
 
-    // Deinit
+
+
+// Deinitialise the peripherals.
     ESP_ERROR_CHECK(adc_oneshot_del_unit(adc1_handle));
     ESP_ERROR_CHECK(dac_oneshot_del_channel(dac_handle_0));
     ESP_ERROR_CHECK(dac_oneshot_del_channel(dac_handle_1));
