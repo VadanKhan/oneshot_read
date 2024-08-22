@@ -68,8 +68,6 @@ static void example_adc_calibration_deinit(adc_cali_handle_t handle);
 
 
 
-
-
 float ESP_ADCERROR = 0.02; // a hardcoded offset (in V) to correct for adc read errors that appear 20mV lower than they should
 
 float OFFSET = 0.2; // Desired Voltage the System will Correct to
