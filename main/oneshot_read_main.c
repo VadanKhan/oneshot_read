@@ -18,7 +18,7 @@ const static char *TAG = "EXAMPLE";
 #define EXAMPLE_ADC1_CHAN0          ADC_CHANNEL_4
 #define EXAMPLE_ADC1_CHAN1          ADC_CHANNEL_5
 #else
-#define EXAMPLE_ADC1_CHAN0          ADC_CHANNEL_2
+#define EXAMPLE_ADC1_CHAN0          ADC_CHANNEL_2  //GPIO PIN 3
 #define EXAMPLE_ADC1_CHAN1          ADC_CHANNEL_3
 #endif
 
@@ -71,7 +71,7 @@ static void example_adc_calibration_deinit(adc_cali_handle_t handle);
 float ESP_ADCERROR = 0.02; // a hardcoded offset (in V) to correct for adc read errors that appear 20mV lower than they should
 
 float OFFSET = 0.2; // Desired Voltage the System will Correct to
-float P_FACTOR = 40; // multiplier for the voltage delta from OFFSET, increase to make the system more sensitive / responsive.
+float P_FACTOR = 38; // multiplier for the voltage delta from OFFSET, increase to make the system more sensitive / responsive.
 
 
 
@@ -153,9 +153,9 @@ void app_main(void)
     dac_oneshot_config_t dac_config = {
         .chan_id = DAC_CHAN_0,
     };
-    ESP_ERROR_CHECK(dac_oneshot_new_channel(&dac_config, &dac_handle_0)); // DAC Channel 1 (GPIO25)
+    ESP_ERROR_CHECK(dac_oneshot_new_channel(&dac_config, &dac_handle_0)); // DAC Channel 1 (GPIO17)
     dac_config.chan_id = DAC_CHAN_1;
-    ESP_ERROR_CHECK(dac_oneshot_new_channel(&dac_config, &dac_handle_1)); // DAC Channel 2 (GPIO26)
+    ESP_ERROR_CHECK(dac_oneshot_new_channel(&dac_config, &dac_handle_1)); // DAC Channel 2 (GPIO18)
 
 
 // Main Loop
@@ -185,7 +185,7 @@ void app_main(void)
             
             // Output to DAC Channel 1
             // ESP_LOGI(TAG, "Print Time: %llu us", print_end - print_start);
-            ESP_ERROR_CHECK(dac_oneshot_output_voltage(dac_handle_0, dac_value1)); // OUTPUT VOLTAGE TO DAC
+            ESP_ERROR_CHECK(dac_oneshot_output_voltage(dac_handle_0, dac_value1)); // OUTPUT VOLTAGE TO DAC (GPIO17)
             // ESP_LOGI(TAG, "DAC input 1: %d, %f mV", dac_value1, dac_value1 * 3.3 / 255 );
         }
 
